@@ -334,6 +334,148 @@
 // }
 
 // export default SpeechPractice;
+// import React, { useState, useEffect } from 'react';
+// import { useNavigate } from 'react-router-dom';
+// import './SpeechPractice.css';
+// import { Container, Button, Card, Navbar, Nav, Alert } from 'react-bootstrap';
+// import { FaMicrophone, FaStop, FaVolumeUp } from 'react-icons/fa';
+
+// function SpeechPractice() {
+//   const [audioUrl, setAudioUrl] = useState(null);
+//   const [isRecording, setIsRecording] = useState(false);
+//   const [poetry, setPoetry] = useState([]);
+//   const [currentIndex, setCurrentIndex] = useState(0);
+//   const [transcript, setTranscript] = useState('');
+//   const [comparisonResult, setComparisonResult] = useState('');
+
+//   const navigate = useNavigate();
+//   const speechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  
+//   // Make sure speech recognition is supported
+//   if (!speechRecognition) {
+//     console.error('Speech recognition not supported in this browser.');
+//     return <p>Speech recognition is not supported by your browser.</p>;
+//   }
+
+//   const recognition = new speechRecognition();
+//   recognition.continuous = true;
+//   recognition.lang = 'en-US';
+
+//   useEffect(() => {
+//     fetch('https://poetrydb.org/linecount/5')
+//       .then(response => response.json())
+//       .then(data => setPoetry(data))
+//       .catch(error => console.error('Error fetching poetry:', error));
+//   }, []);
+
+//   const startRecording = () => {
+//     recognition.onstart = () => {
+//       console.log("Recognition started");
+//       setIsRecording(true);
+//     };
+
+//     recognition.onerror = (event) => {
+//       console.error("Recognition error: ", event.error);
+//     };
+
+//     recognition.onend = () => {
+//       console.log("Recognition service disconnected");
+//       setIsRecording(false);
+//     };
+
+//     recognition.onresult = (event) => {
+//       const currentTranscript = Array.from(event.results)
+//         .map(result => result[0].transcript)
+//         .join('');
+//       setTranscript(currentTranscript);
+//       compareText(currentTranscript, poetry[currentIndex].lines.join(' '));
+//     };
+
+//     recognition.start();
+//   };
+
+//   const stopRecording = () => {
+//     recognition.stop();
+//   };
+
+//   const showNextPoetry = () => {
+//     setCurrentIndex((prevIndex) => (prevIndex + 1) % poetry.length);
+//     setTranscript('');
+//     setComparisonResult('');
+//   };
+
+//   const compareText = (spokenText, writtenText) => {
+//     const wordsSpoken = spokenText.toLowerCase().split(' ');
+//     const wordsWritten = writtenText.toLowerCase().split(' ');
+//     const comparison = wordsWritten.map(word => wordsSpoken.includes(word) ? word : `<span style="color: red;">${word}</span>`);
+//     setComparisonResult(comparison.join(' '));
+//   };
+
+//   const speakPoetry = () => {
+//     if ('speechSynthesis' in window) {
+//       const utterance = new SpeechSynthesisUtterance(poetry[currentIndex].lines.join(' '));
+//       utterance.lang = 'en-US';
+//       window.speechSynthesis.speak(utterance);
+//     } else {
+//       console.error('Text-to-speech is not supported in this browser.');
+//     }
+//   };
+
+//   return (
+//     <div>
+//       <Navbar bg="dark" variant="dark" expand="lg">
+//         <Navbar.Brand href="#">Speech Practice</Navbar.Brand>
+//         <Navbar.Toggle aria-controls="basic-navbar-nav" />
+//         <Navbar.Collapse id="basic-navbar-nav">
+//           <Nav className="ml-auto">
+//             <Nav.Link href="/breathing">Breathing Exercise</Nav.Link>
+//             <Nav.Link href="/speech">Speech Practice</Nav.Link>
+//             <Nav.Link href="/tips">Tips & Resources</Nav.Link>
+//             <Nav.Link href="/user">Home</Nav.Link>
+//           </Nav>
+//         </Navbar.Collapse>
+//       </Navbar>
+
+//       <Container className="speech-container text-center my-5">
+//         <Card className="speech-card">
+//           <Card.Body>
+//             <Card.Title className="speech-title">Mimic and Record</Card.Title>
+//             {poetry.length > 0 && (
+//               <Card.Text className="poetry-text">
+//                 {poetry[currentIndex].lines.join(' ')}
+//               </Card.Text>
+//             )}
+//             <Button variant="info" className="mt-3" onClick={showNextPoetry}>
+//               Show Next Text
+//             </Button>
+//             <Button 
+//               variant={isRecording ? 'danger' : 'success'} 
+//               className="mic-btn mt-3"
+//               onClick={isRecording ? stopRecording : startRecording}
+//             >
+//               {isRecording ? <FaStop /> : <FaMicrophone />}
+//               {isRecording ? ' Stop Recording' : ' Start Recording'}
+//             </Button>
+//             <Button 
+//               variant="primary" 
+//               className="mt-3 ml-3" 
+//               onClick={speakPoetry}
+//             >
+//               <FaVolumeUp /> Listen to Poetry
+//             </Button>
+//             {transcript && (
+//               <Alert variant="secondary" className="mt-3">
+//                 <div dangerouslySetInnerHTML={{ __html: comparisonResult }} />
+//               </Alert>
+//             )}
+//           </Card.Body>
+//         </Card>
+//       </Container>
+//     </div>
+//   );
+// }
+
+// export default SpeechPractice;
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SpeechPractice.css';
@@ -347,26 +489,30 @@ function SpeechPractice() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [transcript, setTranscript] = useState('');
   const [comparisonResult, setComparisonResult] = useState('');
+  const [isSpeechRecognitionSupported, setIsSpeechRecognitionSupported] = useState(true);
 
   const navigate = useNavigate();
-  const speechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  
-  // Make sure speech recognition is supported
-  if (!speechRecognition) {
-    console.error('Speech recognition not supported in this browser.');
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  useEffect(() => {
+    if (!SpeechRecognition) {
+      console.error('Speech recognition not supported in this browser.');
+      setIsSpeechRecognitionSupported(false);
+    } else {
+      fetch('https://poetrydb.org/linecount/5')
+        .then(response => response.json())
+        .then(data => setPoetry(data))
+        .catch(error => console.error('Error fetching poetry:', error));
+    }
+  }, []);
+
+  if (!isSpeechRecognitionSupported) {
     return <p>Speech recognition is not supported by your browser.</p>;
   }
 
-  const recognition = new speechRecognition();
+  const recognition = new SpeechRecognition();
   recognition.continuous = true;
   recognition.lang = 'en-US';
-
-  useEffect(() => {
-    fetch('https://poetrydb.org/linecount/5')
-      .then(response => response.json())
-      .then(data => setPoetry(data))
-      .catch(error => console.error('Error fetching poetry:', error));
-  }, []);
 
   const startRecording = () => {
     recognition.onstart = () => {
